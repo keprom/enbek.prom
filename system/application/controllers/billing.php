@@ -2435,7 +2435,18 @@ class Billing extends Controller
             dbase_pack($db);
             dbase_close($db);
             $db2 = dbase_open("c:/oplata/schet.dbf", 2);
+            $array_error = array();
             foreach ($nach->result() as $n) {
+                if ($n->beznds == 0) {
+                    $array_error[] = "Счет-фактуры, выписанная договору #{$n->dog}, нулевая";
+                    continue;
+                }
+
+                if (strlen(trim($n->nomer)) == 0){
+                    $array_error[] = "Номер счет-фактуры, выписанной договору #{$n->dog}, некорректный: {$n->nomer}";
+                    continue;
+                }
+
                 dbase_add_record($db2,
                     array(
                         $n->dog,
@@ -2445,12 +2456,13 @@ class Billing extends Controller
                 );
             }
             dbase_close($db2);
-            $array = array(1 => 'Перенос прошел успешно!');
-            $this->session->set_flashdata('success', $array);
+            $array_success = array(1 => 'Перенос прошел успешно!');
+            $this->session->set_flashdata('error', $array_error);
+            $this->session->set_flashdata('success', $array_success);
             redirect('billing/pre_perehod');
         } else {
-            $array = array(1 => 'Перенос не возможен. Закройте файл schet.dbf!');
-            $this->session->set_flashdata('error', $array);
+            $array_error = array(1 => 'Перенос не возможен. Закройте файл schet.dbf!');
+            $this->session->set_flashdata('error', $array_error);
             redirect('billing/pre_perehod');
         }
     }
