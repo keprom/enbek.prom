@@ -27,6 +27,14 @@ class Billing extends Controller
 		($this->session->userdata('login')=='programmist') or ($this->session->userdata('login')=='admin'))
 			eval('$this->'.$function.'();');
 	}
+	
+	private $schet_dbf = "schet.dbf";
+	private $nach_dbf = "nach.dbf";
+	private $rekv_dbf = "rekv.dbf";
+	private $anal_tp_dbf = "anal_tp.dbf";
+	private $oplata_dbf =  "oplata.dbf";
+	private $oplata_folder_path = "c:/oplata";
+	
 	function Billing()
 	{
 		parent::Controller();
@@ -1410,7 +1418,7 @@ class Billing extends Controller
 			id in 	(select value::integer from industry.sprav	where name='current_period')")->row();
 		$sql="";
 		set_time_limit(0);		
-		$db = dbase_open("c:/oplata/OPLATA.dbf", 0);
+		$db = dbase_open("{$this->oplata_folder_path}/{$this->oplata_dbf}", 0);
 		
 		if ($db)
 		{			
@@ -2261,7 +2269,7 @@ class Billing extends Controller
 		$nach = $this->db->query("select *from industry.nachislenie_v_buhgalteriu union all select * from industry.nach_fine");
 		
 		set_time_limit(0);
-		$db = dbase_open("c:/oplata/nach.dbf", 2);
+		$db = dbase_open("{$this->oplata_folder_path}/{$this->nach_dbf}", 2);
 		
 		if ($db)
 		{			
@@ -2272,7 +2280,7 @@ class Billing extends Controller
 			dbase_pack($db);
 			dbase_close($db);
 			
-			$db2 = dbase_open("c:/oplata/nach.dbf", 2);
+			$db2 = dbase_open("{$this->oplata_folder_path}/{$this->nach_dbf}", 2);
 			foreach ($nach->result() as $n)
 			{
 				dbase_add_record($db2,
@@ -2297,7 +2305,7 @@ class Billing extends Controller
 
     function perenos_rek1()
     {
-        $db = dbase_open("c:/oplata/rekv.dbf", 2);
+        $db = dbase_open("{$this->oplata_folder_path}/{$this->rekv_dbf}", 2);
         if ($db) {
             header('Content-Type: text/html; charset="utf-8"');
             $this->db->order_by("dog");
@@ -2315,7 +2323,7 @@ class Billing extends Controller
             $i = 0;
             $e = 0;
 
-            $db2 = dbase_open("c:/oplata/rekv.dbf", 2);
+            $db2 = dbase_open("{$this->oplata_folder_path}/{$this->rekv_dbf}", 2);
             foreach ($nach->result() as $n) {
 
                 //находим некорректные БИКи и МФО банков
@@ -2425,7 +2433,7 @@ class Billing extends Controller
     function perenos_nach()
     {
         set_time_limit(0);
-        @$db = dbase_open("c:/oplata/schet.dbf", 2);
+        @$db = dbase_open("{$this->oplata_folder_path}/{$this->schet_dbf}", 2);
         if ($db) {
             $this->db->where('period_id', $this->get_cpi());
             $nach = $this->db->get("industry.schetfactura_to_1c");
@@ -2434,9 +2442,14 @@ class Billing extends Controller
             }
             dbase_pack($db);
             dbase_close($db);
-            $db2 = dbase_open("c:/oplata/schet.dbf", 2);
+            $db2 = dbase_open("{$this->oplata_folder_path}/{$this->schet_dbf}", 2);
             $array_error = array();
             foreach ($nach->result() as $n) {
+                if ($n->dog1 == 0){
+                    $array_error[] = "У договора #{$n->dog} некорректный номер 1C: {$n->dog1}";
+                    continue;
+                }
+
                 if ($n->beznds == 0) {
                     $array_error[] = "Счет-фактуры, выписанная договору #{$n->dog}, нулевая";
                     continue;
@@ -2483,7 +2496,7 @@ class Billing extends Controller
 		
 		
 		set_time_limit(0);
-		$db = dbase_open("c:/oplata/anal_tp.dbf", 2);
+		$db = dbase_open("{$this->oplata_folder_path}/{$this->anal_tp_dbf}", 2);
 		
 		if ($db)
 		{			
@@ -2494,7 +2507,7 @@ class Billing extends Controller
 			dbase_pack($db);
 			dbase_close($db);
 			
-			$db2 = dbase_open("c:/oplata/anal_tp.dbf", 2);
+			$db2 = dbase_open("{$this->oplata_folder_path}/{$this->anal_tp_dbf}", 2);
 			foreach ($nach->result() as $n)
 			{
 				dbase_add_record($db2,
@@ -3734,8 +3747,87 @@ where firm_id={$this->uri->segment(3)} and data_finish is null";
         $this->db->where("id", $tariff_id);
         $this->db->delete("industry.tariff");
         redirect("billing/tariff_list");
-    }	
-	
+    }
+
+    public function open_anal_tp_dbf()
+    {
+        set_time_limit(0);
+        $db = dbase_open("{$this->oplata_folder_path}/{$this->anal_tp_dbf}", 0);
+        if ($db) {
+            $ar = array();
+            for ($i=1;$i<dbase_numrecords($db)+1;$i++)
+            {
+                $ar[$i] = dbase_get_record_with_names($db,$i);
+            }
+            dbase_close($db);
+            $data['records'] = $ar;
+            $this->load->view("pre_perehod/anal_tp.php", $data);
+        } else {
+            $array_error = array(1 => 'Чтение anal_tp.dbf невозможно. Возможно файл отсутствует либо открыт!');
+            $this->session->set_flashdata('error', $array_error);
+            redirect('billing/pre_perehod');
+        }
+    }
+
+    public function open_schet_dbf()
+    {
+        set_time_limit(0);
+        $db = dbase_open("{$this->oplata_folder_path}/{$this->schet_dbf}", 0);
+        if ($db) {
+            $ar = array();
+            for ($i=1;$i<dbase_numrecords($db)+1;$i++)
+            {
+                $ar[$i] = dbase_get_record_with_names($db,$i);
+            }
+            dbase_close($db);
+            $data['records'] = $ar;
+            $this->load->view("pre_perehod/schet.php", $data);
+        } else {
+            $array_error = array(1 => 'Чтение schet.dbf невозможно. Возможно файл отсутствует либо открыт!');
+            $this->session->set_flashdata('error', $array_error);
+            redirect('billing/pre_perehod');
+        }
+    }
+
+    public function open_rekv_dbf()
+    {
+        set_time_limit(0);
+        $db = dbase_open("{$this->oplata_folder_path}/{$this->rekv_dbf}", 0);
+        if ($db) {
+            $ar = array();
+            for ($i=1;$i<dbase_numrecords($db)+1;$i++)
+            {
+                $ar[$i] = dbase_get_record_with_names($db,$i);
+            }
+            dbase_close($db);
+            $data['records'] = $ar;
+            $this->load->view("pre_perehod/rekv.php", $data);
+        } else {
+            $array_error = array(1 => 'Чтение rekv.dbf невозможно. Возможно файл отсутствует либо открыт!');
+            $this->session->set_flashdata('error', $array_error);
+            redirect('billing/pre_perehod');
+        }
+    }
+
+    public function open_nach_dbf()
+    {
+        set_time_limit(0);
+        $db = dbase_open("{$this->oplata_folder_path}/{$this->nach_dbf}", 0);
+        if ($db) {
+            $ar = array();
+            for ($i=1;$i<dbase_numrecords($db)+1;$i++)
+            {
+                $ar[$i] = dbase_get_record_with_names($db,$i);
+            }
+            dbase_close($db);
+            $data['records'] = $ar;
+            $this->load->view("pre_perehod/nach.php", $data);
+        } else {
+            $array_error = array(1 => 'Чтение nach.dbf невозможно. Возможно файл отсутствует либо открыт!');
+            $this->session->set_flashdata('error', $array_error);
+            redirect('billing/pre_perehod');
+        }
+    }
 }
 
 ?>
