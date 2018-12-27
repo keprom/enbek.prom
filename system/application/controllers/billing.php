@@ -27,14 +27,7 @@ class Billing extends Controller
 		($this->session->userdata('login')=='programmist') or ($this->session->userdata('login')=='admin'))
 			eval('$this->'.$function.'();');
 	}
-	
-	private $schet_dbf = "schet.dbf";
-	private $nach_dbf = "nach.dbf";
-	private $rekv_dbf = "rekv.dbf";
-	private $anal_tp_dbf = "anal_tp.dbf";
-	private $oplata_dbf =  "oplata.dbf";
-	private $oplata_folder_path = "c:/oplata";
-	
+
 	function Billing()
 	{
 		parent::Controller();
@@ -817,6 +810,10 @@ class Billing extends Controller
 		$data['r']= $this->db->get('industry.schetfactura_date');	
 		$this->db->where('id',$_POST["firm_id"]);
 		$data['firm']=$this->db->get('industry.firm')->row();
+		
+        $this->db->where('period_id',$_POST['period_id']);
+        $data['max_schet_number'] = $this->db->get("shell.max_schet_number")->row()->schet_number;
+
 		$this->left();
 		$this->load->view("pre_schetfactura2",$data);
 		$this->load->view("right");
@@ -1419,7 +1416,7 @@ class Billing extends Controller
 			id in 	(select value::integer from industry.sprav	where name='current_period')")->row();
 		$sql="";
 		set_time_limit(0);		
-		$db = dbase_open("{$this->oplata_folder_path}/{$this->oplata_dbf}", 0);
+		$db = dbase_open("c:/oplata/oplata.dbf", 0);
 		
 		if ($db)
 		{			
@@ -2270,7 +2267,7 @@ class Billing extends Controller
 		$nach = $this->db->query("select *from industry.nachislenie_v_buhgalteriu union all select * from industry.nach_fine");
 		
 		set_time_limit(0);
-		$db = dbase_open("{$this->oplata_folder_path}/{$this->nach_dbf}", 2);
+		$db = dbase_open("c:/oplata/nach.dbf", 2);
 		
 		if ($db)
 		{			
@@ -2281,7 +2278,7 @@ class Billing extends Controller
 			dbase_pack($db);
 			dbase_close($db);
 			
-			$db2 = dbase_open("{$this->oplata_folder_path}/{$this->nach_dbf}", 2);
+			$db2 = dbase_open("c:/oplata/nach.dbf", 2);
 			foreach ($nach->result() as $n)
 			{
 				dbase_add_record($db2,
@@ -2306,7 +2303,7 @@ class Billing extends Controller
 
     function perenos_rek1()
     {
-        $db = dbase_open("{$this->oplata_folder_path}/{$this->rekv_dbf}", 2);
+        $db = dbase_open("c:/oplata/rekv.dbf", 2);
         if ($db) {
             header('Content-Type: text/html; charset="utf-8"');
             $this->db->order_by("dog");
@@ -2324,7 +2321,7 @@ class Billing extends Controller
             $i = 0;
             $e = 0;
 
-            $db2 = dbase_open("{$this->oplata_folder_path}/{$this->rekv_dbf}", 2);
+            $db2 = dbase_open("c:/oplata/rekv.dbf", 2);
             foreach ($nach->result() as $n) {
 
                 //находим некорректные БИКи и МФО банков
@@ -2434,7 +2431,7 @@ class Billing extends Controller
     function perenos_nach()
     {
         set_time_limit(0);
-        @$db = dbase_open("{$this->oplata_folder_path}/{$this->schet_dbf}", 2);
+        @$db = dbase_open("c:/oplata/schet.dbf", 2);
         if ($db) {
             $this->db->where('period_id', $this->get_cpi());
             $nach = $this->db->get("industry.schetfactura_to_1c");
@@ -2443,7 +2440,7 @@ class Billing extends Controller
             }
             dbase_pack($db);
             dbase_close($db);
-            $db2 = dbase_open("{$this->oplata_folder_path}/{$this->schet_dbf}", 2);
+            $db2 = dbase_open("c:/oplata/schet.dbf", 2);
             $array_error = array();
             foreach ($nach->result() as $n) {
                 if ($n->dog1 == 0){
@@ -2497,7 +2494,7 @@ class Billing extends Controller
 		
 		
 		set_time_limit(0);
-		$db = dbase_open("{$this->oplata_folder_path}/{$this->anal_tp_dbf}", 2);
+		$db = dbase_open("c:/oplata/anal_tp.dbf", 2);
 		
 		if ($db)
 		{			
@@ -2508,7 +2505,7 @@ class Billing extends Controller
 			dbase_pack($db);
 			dbase_close($db);
 			
-			$db2 = dbase_open("{$this->oplata_folder_path}/{$this->anal_tp_dbf}", 2);
+			$db2 = dbase_open("c:/oplata/anal_tp.dbf", 2);
 			foreach ($nach->result() as $n)
 			{
 				dbase_add_record($db2,
@@ -3753,7 +3750,7 @@ where firm_id={$this->uri->segment(3)} and data_finish is null";
     public function open_anal_tp_dbf()
     {
         set_time_limit(0);
-        $db = dbase_open("{$this->oplata_folder_path}/{$this->anal_tp_dbf}", 0);
+        $db = dbase_open("c:/oplata/anal_tp.dbf", 0);
         if ($db) {
             $ar = array();
             for ($i=1;$i<dbase_numrecords($db)+1;$i++)
@@ -3773,7 +3770,7 @@ where firm_id={$this->uri->segment(3)} and data_finish is null";
     public function open_schet_dbf()
     {
         set_time_limit(0);
-        $db = dbase_open("{$this->oplata_folder_path}/{$this->schet_dbf}", 0);
+        $db = dbase_open("c:/oplata/schet.dbf", 0);
         if ($db) {
             $ar = array();
             for ($i=1;$i<dbase_numrecords($db)+1;$i++)
@@ -3793,7 +3790,7 @@ where firm_id={$this->uri->segment(3)} and data_finish is null";
     public function open_rekv_dbf()
     {
         set_time_limit(0);
-        $db = dbase_open("{$this->oplata_folder_path}/{$this->rekv_dbf}", 0);
+        $db = dbase_open("c:/oplata/rekv.dbf", 0);
         if ($db) {
             $ar = array();
             for ($i=1;$i<dbase_numrecords($db)+1;$i++)
@@ -3813,7 +3810,7 @@ where firm_id={$this->uri->segment(3)} and data_finish is null";
     public function open_nach_dbf()
     {
         set_time_limit(0);
-        $db = dbase_open("{$this->oplata_folder_path}/{$this->nach_dbf}", 0);
+        $db = dbase_open("c:/oplata/nach.dbf", 0);
         if ($db) {
             $ar = array();
             for ($i=1;$i<dbase_numrecords($db)+1;$i++)
@@ -3829,6 +3826,140 @@ where firm_id={$this->uri->segment(3)} and data_finish is null";
             redirect('billing/pre_perehod');
         }
     }
+
+   	public function export_rekvizit_schet()
+    {
+        /*проверка наличия дублирующихся номеров СФ*/
+        $this->db->where('period_id', $this->get_cpi());
+        $dup_schet_number = $this->db->get("shell.dup_schet_number");
+        if ($dup_schet_number->num_rows>0) {
+            $array_error = array(1 => 'Имеются повторяющиеся номера счетов-фактур!');
+            foreach ($dup_schet_number->result() as $d){
+                $array_error[] = "№{$d->dogovor}: номер счета-фактуры: {$d->schet_number}";
+            }
+            $this->session->set_flashdata('error', $array_error);
+            redirect('billing/pre_perehod');
+        }
+
+        $db = dbase_open("c:/oplata/rschet.dbf", 2);
+        if ($db) {
+            for ($i = 1; $i < dbase_numrecords($db) + 1; $i++) {
+                dbase_delete_record($db, $i);
+            }
+            dbase_pack($db);
+            dbase_close($db);
+
+            $this->db->where('period_id', $this->get_cpi());
+            $nach = $this->db->get("shell.export_rekvizit_schet");
+
+            $russian_letters = array("А", "О", "Е", "С", "Х", "Р", "Т", "Н", "К", "В", "М");
+            $english_letters = array("A", "O", "E", "C", "X", "P", "T", "H", "K", "B", "M");
+            $array_error = array();
+
+            $db = dbase_open("c:/oplata/rschet.dbf", 2);
+            foreach ($nach->result() as $n) {
+                //проверка номера 1С
+                if ($n->dog1 == 0){
+                    $array_error[] = "№{$n->dog}: некорректный номер 1C - {$n->dog1}";
+                    continue;
+                }
+
+                //находим некорректные БИКи и МФО банков
+                if ((mb_strlen(trim($n->mfo), 'UTF-8') != 8) and ($n->mfo != '0000000000')) {
+                    $array_error[] = "№{$n->dog}: неверный БИК банка - {$n->mfo}";
+                    continue;
+                }
+
+                //обнуляем пустые МФО
+                if (($n->mfo == '0000000000')) {
+                    $n->mfo = '';
+                }
+
+                //находим некорректные БИНы организаций
+                if (mb_strlen(trim($n->bin), 'UTF-8') != 12) {
+                    $array_error[] = "№{$n->dog}: неверный БИН - {$n->bin}";
+                    continue;
+                }
+
+                //обнуляем пустые БИНы
+                if ((mb_strlen(trim($n->bin), 'UTF-8') == 0)) {
+                    $n->bin = '';
+                }
+
+                //заменяем кириллицу на латиницу в МФО
+                $n->mfo = str_replace($russian_letters, $english_letters, $n->mfo);
+
+                //вдруг пропущен символ
+                if ($this->isRussian($n->mfo)) {
+                    $array_error[] = "№{$n->dog}: БИК банка содержит кириллицу - {$n->mfo}";
+                    continue;
+                }
+
+                //проверка расчетного счета
+                if(($n->mfo <> '') && (mb_strlen($n->schet, 'UTF-8') <> 20)){
+                    $array_error[] = "№{$n->dog}: некорректный расчетный счет - {$n->schet}";
+                    continue;
+                }
+								
+                if(($n->mfo == '') && (mb_strlen($n->schet, 'UTF-8') <> 20)){
+                    $n->schet = '';
+                }	
+
+                //проверка начисления
+                if ($n->beznds == 0) {
+                    $array_error[] = "№{$n->dog}: нулевая счет-фактура";
+                    continue;
+                }
+
+                //проверка номера СФ
+                if (strlen(trim($n->nomer)) == 0){
+                    $array_error[] = "№{$n->dog}: некорректный номер счет-фактуры - {$n->nomer}";
+                    continue;
+                }
+
+                dbase_add_record($db,
+                    array(
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->name)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->dog)), 'cp866', 'utf-8'),
+                        $this->d2($n->dog_data),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->bin)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->mfo)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->schet)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->adres)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->direct)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->sub)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->kvt)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->tarif)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->beznds)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->nds)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->snds)), 'cp866', 'utf-8'),
+                        mb_convert_encoding(str_replace('  ', ' ', trim($n->nomer)), 'cp866', 'utf-8'),
+                        $this->d2($n->sf_data),
+                        $n->dog1
+                    )
+                );
+            }
+            dbase_close($db);
+
+            $this->db->where("id", $this->get_cpi());
+            $current_period = $this->db->get("industry.period")->row();
+            $current_period = explode("-", $current_period->end_date);
+            $month = $current_period[1];
+            
+            if (!copy("c:/oplata/rschet.dbf", "c:/oplata/enbek{$month}.dbf")) {
+                $array_error[] = "Не удалось скопировать файл rschet.dbf";
+            }
+            
+            $array_success[] = 'Перенос прошел успешно!';
+            $this->session->set_flashdata('success', $array_success);
+            $this->session->set_flashdata('error', $array_error);
+            redirect('billing/pre_perehod');
+        } else {
+            echo "DBF file is busy!";
+        }
+    }
+
+
 }
 
 ?>
